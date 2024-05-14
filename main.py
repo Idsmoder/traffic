@@ -107,7 +107,6 @@ class Vehicle(pygame.sprite.Sprite):
 	
 	def render(self, screen):
 		screen.blit(self.image, (self.x, self.y))
-	
 	def move(self):
 		if (self.direction == 'right'):
 			
@@ -269,7 +268,6 @@ class Main:
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				sys.exit()
-		
 		screen.blit(background, (0, 0))  # simulyatsiyada fonni ko'rsatish
 		for i in greenSingals:
 			if (i==currentGreen):
@@ -278,9 +276,6 @@ class Main:
 					screen.blit(yellowSignal, signalCoods[i[1]])
 					signals[i[1]].signalText = signals[i[1]].yellow
 					signals[i[0]].signalText = signals[i[0]].yellow
-
-
-					
 				else:
 					screen.blit(greenSignal, signalCoods[i[0]])
 					screen.blit(greenSignal, signalCoods[i[1]])
@@ -291,42 +286,14 @@ class Main:
 				screen.blit(redSignal, signalCoods[i[1]])
 				signals[i[0]].signalText = "-"
 				signals[i[1]].signalText = "-"
-			# if (i[0]==currentGreen or i[1]==currentGreen):
-			# 	screen.blit(greenSignal, signalCoods[i[0]])
-			# 	screen.blit(greenSignal, signalCoods[i[1]])
-			# else:
-			# 	screen.blit(greenSignal, signalCoods[i[0]])
-			# 	screen.blit(greenSignal, signalCoods[i[1]])
-
-				
-		# for i in range(0, noOfSignals):
-		# 	if (i == currentGreen):
-		# 		if (currentYellow == 1):
-		# 			signals[i].signalText = signals[i].yellow
-					
-		# 			screen.blit(yellowSignal, signalCoods[i])
-		# 		else:
-		# 			signals[i].signalText = signals[i].green
-		# 			screen.blit(greenSignal, signalCoods[i])
-		# 	else:
-		# 		if (signals[i].red <= 10):
-		# 			signals[i].signalText = signals[i].red
-		# 		else:
-		# 			signals[i].signalText = "-"
-		# 		screen.blit(redSignal, signalCoods[i])
 		signalTexts = ["", "", "", ""]
-		
 		# signal taymerini ko'rsatish
 		for i in range(0, noOfSignals):
 			signalTexts[i] = font.render(str(signals[i].signalText), True, white, black)
-
 			screen.blit(signalTexts[i], signalTimerCoods[i])
-		
 		# transport vositalarini ko'rsatish
 		for vehicle in simulation:
 			screen.blit(vehicle.image, [vehicle.x, vehicle.y])
 			vehicle.move()
 		pygame.display.update()
-
-
 Main()
