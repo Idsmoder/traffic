@@ -5,9 +5,10 @@ import pygame
 import sys
 
 # Signal taymerlarining standart qiymatlari
-defaultGreen = {0: 10, 1: 0, 2: 10, 3: 0}
+defaultGreen = {0: 10, 1: 10, 2: 10, 3: 10}
 defaultRed = 15
 defaultYellow = 3
+YellowSeconds = 3
 
 signals = []
 noOfSignals = 4
@@ -26,6 +27,10 @@ vehicles = {'right': {0: [], 1: [], 2: [],3:[], 'crossed': 0}, 'down': {0: [], 1
             'left': {0: [], 1: [], 2: [],3:[], 'crossed': 0}, 'up': {0: [], 1: [], 2: [],3:[], 'crossed': 0}}
 vehicleTypes = {0: 'car', 1: 'bus', 2: 'truck', 3: 'bike'}
 directionNumbers = {0: 'right', 1: 'down', 2: 'left', 3: 'up'}
+
+vehiclesTurned = {'right': {1:[], 2:[]}, 'down': {1:[], 2:[]}, 'left': {1:[], 2:[]}, 'up': {1:[], 2:[]}}
+vehiclesNotTurned = {'right': {1:[], 2:[]}, 'down': {1:[], 2:[]}, 'left': {1:[], 2:[]}, 'up': {1:[], 2:[]}}
+rotationAngle = 3
 
 # Signal tasvirining koordinatalari, taymer va avtomobillar soni
 signalCoods = [(480, 640), (490, 190), (880, 190), (880, 640)]
@@ -63,13 +68,15 @@ class Vehicle(pygame.sprite.Sprite):
 		self.x = x[direction][lane]
 		self.y = y[direction][lane]
 		self.crossed = 0
+		self.turned = 0
+		self.rotateAngle = 0
 		vehicles[direction][lane].append(self)
 		self.index = len(vehicles[direction][lane]) - 1
 		path = "images/" + direction + "/" + vehicleClass + ".png"
 		self.image = pygame.image.load(path)
-		
 		if (len(vehicles[direction][lane]) > 1 and vehicles[direction][lane][self.index - 1].crossed == 0):  # agar u to'xtash chizig'ini kesib o'tmaguncha transport vositasining bo'lagida 1 dan ortiq transport vositasi bo'lsa
 			if (direction == 'right'):
+
 				self.stop = vehicles[direction][lane][self.index - 1].stop - vehicles[direction][lane][self.index - 1].image.get_rect().width - stoppingGap  # to'xtash koordinatasini quyidagicha belgilash: keyingi avtomobilning to'xtash koordinatasi - keyingi transport vositasining kengligi - bo'shliq
 			elif (direction == 'left'):
 				self.stop = vehicles[direction][lane][self.index - 1].stop + vehicles[direction][lane][
@@ -103,13 +110,12 @@ class Vehicle(pygame.sprite.Sprite):
 	
 	def move(self):
 		if (self.direction == 'right'):
-			print(currentYellow,"yellow")
+			
 			if (self.crossed == 0 and self.x + self.image.get_rect().width > stopLines[self.direction]):
 				  # if the image has crossed stop line now
 				self.crossed = 1
-
 			if ((self.x + self.image.get_rect().width <= self.stop or self.crossed == 1 or (
-					currentGreen == [0, 2] and currentYellow == [])) and (
+					currentGreen == [0, 2] and currentYellow != currentGreen)) and (
 					self.index == 0 or self.x + self.image.get_rect().width < (
 					vehicles[self.direction][self.lane][self.index - 1].x - movingGap))):
 				# (if the image has not reached its stop coordinate or has crossed stop line or has green signal) and (it is either the first vehicle in that lane or it is has enough gap to the next vehicle in that lane)
@@ -118,14 +124,14 @@ class Vehicle(pygame.sprite.Sprite):
 			if (self.crossed == 0 and self.y + self.image.get_rect().height > stopLines[self.direction]):
 				self.crossed = 1
 			if ((self.y + self.image.get_rect().height <= self.stop or self.crossed == 1 or (
-					currentGreen == [1, 3] and currentYellow == 0)) and (
+					currentGreen == [1, 3] and currentYellow != currentGreen)) and (
 					self.index == 0 or self.y + self.image.get_rect().height < (
 					vehicles[self.direction][self.lane][self.index - 1].y - movingGap))):
 				self.y += self.speed
 		elif (self.direction == 'left'):
 			if (self.crossed == 0 and self.x < stopLines[self.direction]):
 				self.crossed = 1
-			if ((self.x >= self.stop or self.crossed == 1 or (currentGreen == [0, 2] and currentYellow == [])) and (
+			if ((self.x >= self.stop or self.crossed == 1 or (currentGreen == [0, 2] and currentYellow != currentGreen)) and (
 					self.index == 0 or self.x > (
 					vehicles[self.direction][self.lane][self.index - 1].x + vehicles[self.direction][self.lane][
 				self.index - 1].image.get_rect().width + movingGap))):
@@ -133,7 +139,7 @@ class Vehicle(pygame.sprite.Sprite):
 		elif (self.direction == 'up'):
 			if (self.crossed == 0 and self.y < stopLines[self.direction]):
 				self.crossed = 1
-			if ((self.y >= self.stop or self.crossed == 1 or (currentGreen == [1, 3] and currentYellow == 0)) and (
+			if ((self.y >= self.stop or self.crossed == 1 or (currentGreen == [1, 3] and currentYellow != currentGreen)) and (
 					self.index == 0 or self.y > (
 					vehicles[self.direction][self.lane][self.index - 1].y + vehicles[self.direction][self.lane][
 				self.index - 1].image.get_rect().height + movingGap))):
@@ -155,44 +161,51 @@ def initialize():
 
 def repeat():
 	global currentGreen, currentYellow, nextGreen
-	while (signals[currentGreen[0]].green > 0 and signals[currentGreen[1]].green > 0):  # joriy yashil signalning taymeri nolga teng 
+	while (signals[currentGreen[0]].green > 0 and signals[currentGreen[1]].green > 0):
 		updateValues()
 		time.sleep(1)
-	currentYellow = [currentGreen[0],currentGreen[1]]  # set yellow signal on
+
+	if currentYellow == 0:
+		currentYellow = []  # set yellow signal off
+	else:
+		currentYellow = [currentGreen[0],currentGreen[1]]  # set yellow signal on
 	# reset stop coordinates of lanes and vehicles
-	for vehicle in vehicles[directionNumbers[currentGreen[0]]]:
-		vehicle.stop = defaultStop[directionNumbers[currentGreen[0]]]
-	for vehicle in vehicles[directionNumbers[currentGreen[1]]]:
-		vehicle.stop = defaultStop[directionNumbers[currentGreen[1]]]
+	for i in range(0, 3):
+		for vehicle in vehicles[directionNumbers[currentGreen[0]]][i]:
+			vehicle.stop = defaultStop[directionNumbers[currentGreen[0]]]
 	while (signals[currentGreen[0]].yellow > 0 and signals[currentGreen[1]].yellow > 0):  # while the timer of current yellow signal is not zero
 		updateValues()
 		time.sleep(1)
-	currentYellow = [currentGreen[0],currentGreen[1]]  # set yellow signal off
-
+	if currentYellow == 0:
+		currentYellow = []  # set yellow signal off
+	else:
+		currentYellow = [currentGreen[0],currentGreen[1]]  # set yellow signal on
 	
 	# reset all signal times of current signal to default times
-	signals[currentGreen].green = defaultGreen[currentGreen]
-	signals[currentGreen].yellow = defaultYellow
-	signals[currentGreen].red = defaultRed
-	
+	signals[currentGreen[0]].green = defaultGreen[0]
+	signals[currentGreen[1]].green = defaultGreen[0]
+	signals[currentGreen[0]].yellow = defaultYellow
+	signals[currentGreen[1]].yellow = defaultYellow
+	signals[currentGreen[0]].red = defaultRed
+	signals[currentGreen[1]].red = defaultRed
+
 	currentGreen = nextGreen  # set next signal as green signal
 	if currentGreen == [0, 2]:
 		nextGreen = [1, 3]
 	else:
 		nextGreen = [0, 2]  # set next green signal
-	signals[nextGreen].red = signals[currentGreen].yellow + signals[
-		currentGreen].green  # set the red time of next to next signal as (yellow time + green time) of next signal
+	signals[nextGreen[0]].red = signals[currentGreen[0]].yellow + signals[
+		currentGreen[0]].green  # set the red time of next to next signal as (yellow time + green time) of next signal
+	signals[nextGreen[1]].red = signals[currentGreen[1]].yellow + signals[
+		currentGreen[1]].green  # set the red time of next to next signal as (yellow time + green time) of next signal
 	repeat()
 
 
 # Signal taymerlarining qiymatlarini har soniyadan keyin yangilang
 def updateValues():
 	for i in greenSingals:
-		print(i)
-		
 		if i == currentGreen:
 			if signals[i[0]].green == 0 and signals[i[1]].green == 0:
-				print(signals[i[0]].yellow)
 				signals[i[0]].yellow -= 1
 				signals[i[1]].yellow -= 1
 			else:
@@ -218,8 +231,8 @@ def generateVehicles():
 			direction_number = 2
 		elif (temp < dist[3]):
 			direction_number = 3
-		Vehicle(lane_number, vehicleTypes[vehicle_type], direction_number, directionNumbers[direction_number])
-		time.sleep(0.2)
+		Vehicle(lane_number, vehicleTypes[vehicle_type], direction_number, directionNumbers[direction_number] )
+		time.sleep(0.1)
 
 
 class Main:
@@ -260,11 +273,24 @@ class Main:
 		screen.blit(background, (0, 0))  # simulyatsiyada fonni ko'rsatish
 		for i in greenSingals:
 			if (i==currentGreen):
-				screen.blit(greenSignal, signalCoods[i[0]])
-				screen.blit(greenSignal, signalCoods[i[1]])
+				if signals[i[0]].green == 0 and signals[i[1]].green == 0:
+					screen.blit(yellowSignal, signalCoods[i[0]])
+					screen.blit(yellowSignal, signalCoods[i[1]])
+					signals[i[1]].signalText = signals[i[1]].yellow
+					signals[i[0]].signalText = signals[i[0]].yellow
+
+
+					
+				else:
+					screen.blit(greenSignal, signalCoods[i[0]])
+					screen.blit(greenSignal, signalCoods[i[1]])
+					signals[i[0]].signalText = signals[i[0]].green
+					signals[i[1]].signalText = signals[i[1]].green
 			else:
 				screen.blit(redSignal, signalCoods[i[0]])
 				screen.blit(redSignal, signalCoods[i[1]])
+				signals[i[0]].signalText = "-"
+				signals[i[1]].signalText = "-"
 			# if (i[0]==currentGreen or i[1]==currentGreen):
 			# 	screen.blit(greenSignal, signalCoods[i[0]])
 			# 	screen.blit(greenSignal, signalCoods[i[1]])
@@ -288,12 +314,13 @@ class Main:
 		# 		else:
 		# 			signals[i].signalText = "-"
 		# 		screen.blit(redSignal, signalCoods[i])
-		# signalTexts = ["", "", "", ""]
+		signalTexts = ["", "", "", ""]
 		
 		# signal taymerini ko'rsatish
-		# for i in range(0, noOfSignals):
-		# 	signalTexts[i] = font.render(str(signals[i].signalText), True, white, black)
-		# 	screen.blit(signalTexts[i], signalTimerCoods[i])
+		for i in range(0, noOfSignals):
+			signalTexts[i] = font.render(str(signals[i].signalText), True, white, black)
+
+			screen.blit(signalTexts[i], signalTimerCoods[i])
 		
 		# transport vositalarini ko'rsatish
 		for vehicle in simulation:
